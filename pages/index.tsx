@@ -6,6 +6,7 @@ import {useState} from "react";
 import {useTransaction} from "../hooks/useTransaction";
 import {webWalletTxReturnPath} from "../utils/routes";
 
+import OutputList from '../components/OutputList';
 
 const Home: NextPage = () => {
     const {address, logout, env, balance, nonce} = useAuth();
@@ -32,10 +33,11 @@ const Home: NextPage = () => {
         <RequiresAuth>
             <div className="flex justify-center w-full mt-20">
                 <div className="flex flex-col items-start space-y-2 max-w-screen-md">
-                    <h2 className="text-xl">Hello, Elrond Next Starter Kit!</h2>
-                    <p>Address: {address}</p>
-                    <p>Balance: {balance.toDenominatedString() + egldLabel}</p>
-                    <p>Nonce: {nonce}</p>
+                    <h2 className="text-xl">Welcome to braindead list!</h2>
+                    <p className="">Here you'll be able to see who are the brain dead ppl that list below mint price lol</p>
+                    <p>You: {address}</p>
+                    <p>You rich mf have: {balance.toDenominatedString() + egldLabel}</p>
+                    <p>You active mf have nonce: {nonce} </p>
                     <button type="button"
                             className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             onClick={() => {
@@ -44,6 +46,12 @@ const Home: NextPage = () => {
                     >
                         Logout
                     </button>
+
+                    <OutputList />
+
+
+
+
 
                     {/*verify if env is dev or test*/}
                     {env === "devnet" && <div className="pt-6 w-full">
@@ -62,7 +70,7 @@ const Home: NextPage = () => {
                                     }}
                                     type="text"
                                     name="address"
-                                    className="mt-1 p-2 w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
+                                    className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
 
                             </div>
                             <div className="w-full">
@@ -79,7 +87,7 @@ const Home: NextPage = () => {
                                     }}
                                     type="text"
                                     name="data"
-                                    className="mt-1 p-2 w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
+                                    className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
 
                             </div>
                             <button type="button"
