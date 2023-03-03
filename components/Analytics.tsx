@@ -2,7 +2,7 @@ import { render } from "@headlessui/react/dist/utils/render";
 import { useEffect, useState } from "react";
 
 
-export default function OutputList() {
+export default function Analytics() {
 
     //xoxno api 
     const xoCollectionAPI = 'https://proxy-api.xoxno.com/getCollectionOwners/'
@@ -87,7 +87,6 @@ export default function OutputList() {
                             //UseEffect below will take care of the rest
                         })
                 }
-
             })
 
         .catch((err) => {
@@ -159,7 +158,7 @@ export default function OutputList() {
                 <label htmlFor="email"
                         className="block text-sm font-medium text-gray-700"
                 >
-                    Collection identifier
+                    collection identifier
                 </label>
                 <input
                     value={cIdentif}
@@ -171,24 +170,20 @@ export default function OutputList() {
                     className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
             </div>
             <button type="button"
-                            className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            onClick={() => {
-                                // callComputeXo();
-                                callCompute();
-                            }}
-                    >
-                        Compute
-                    </button>
-            <p> Collection info</p>
+                    className="inline-flex items-center px-2.5 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={() => {
+                        // callComputeXo();
+                        callCompute();
+                    }}
+            >
+                compute
+            </button>
             <p className="text-sm text-gray-700">
                 NFTs:  
-                <span className="text-gray-900"> {collectionSize}</span>
-            </p>
-            <p className="text-sm text-gray-700">
+                <span className="text-gray-900 mr-2"> {collectionSize}</span>
                 Hodlers:  
                 <span className="text-gray-900"> {reqResultStateWithType.length}</span>
             </p>
-            <p> Output list </p>
             {apiProcessing ? (
                 <img 
                     src={imgUrl} 
@@ -215,7 +210,7 @@ export default function OutputList() {
                             })}
                         </tbody>
                     </table>
-                )} 
+            )} 
             
         </>
     )
