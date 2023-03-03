@@ -201,7 +201,7 @@ export default function Analytics() {
                             {/* {reqResultState.map((item: any, index: number) => { */}
                             {reqResultStateWithType.map((item: any, index: number) => {
                                 return (
-                                    <tr>
+                                    <tr key={item.address}>
                                         {renderSwitch(item.address)}
                                         <td className="border border-slate-600 text-center text-sm">{item.balance}</td>
                                         {/* <td className="border border-slate-600 text-center text-sm">{item.count}</td> */}

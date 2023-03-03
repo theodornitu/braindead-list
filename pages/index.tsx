@@ -44,7 +44,7 @@ const Home: NextPage = () => {
             <div className="flex justify-center w-full mt-20">
                 <div className="flex flex-col items-start space-y-2 max-w-screen-md">
                     <h2 className="text-xl">Welcome to braindead list!</h2>
-                    <p className="text-sm">Here you'll be able to see who are the brain dead ppl that list below mint price lol</p>
+                    <p className="text-sm">Here you&apos;ll be able to see who are the brain dead ppl that list below mint price lol</p>
                     <p className="text-sm">Address: {address}</p>
                     <p className="text-sm">You rich mf have: {balance.toDenominatedString() + egldLabel}</p>                    
 

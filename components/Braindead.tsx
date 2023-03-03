@@ -89,80 +89,85 @@ export default function Braindead() {
     }
 
     async function callCompute() {
-        //Get collection details
-        setApiProcessing(true);
-        setApiProgress(0);
-        let currentRequest = 0;
-        console.log('Getting collection holders');
-        let colHolders = await getCollectionOwners(cIdentif);
-        // console.log(colHolders);
+        try {
+            //Get collection details
+            setApiProcessing(true);
+            setApiProgress(0);
+            let currentRequest = 0;
+            console.log('Getting collection holders');
+            let colHolders = await getCollectionOwners(cIdentif);
+            // console.log(colHolders);
 
-        //debug
-        // let temp = colHolders.splice(0,60);
-        // colHolders = temp;
-        // console.log('colHolders splice: ' + colHolders.length)
-        //end of debug
+            //debug
+            // let temp = colHolders.splice(0,60);
+            // colHolders = temp;
+            // console.log('colHolders splice: ' + colHolders.length)
+            //end of debug
 
-        console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
-        for(const holder of colHolders) {
-        // colHolders.forEach(async (holder, i) => {
-            setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
-            const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess);
-            sleep(400);
-            currentRequest++;
-            // console.log('API for: ' + holder.address);
-            let txHashList : string[] = [];
-            if(holderActivity.length != 0) {
-                // console.log('data.length not equal 0: ' + holderActivity.length);
-                // console.log(holderActivity);
-                // console.log('init number of deadbrain listings ');
-                let local_brainDeadListings: number = 0;
-                for(let j = 0; j < holderActivity.length; j++)
-                {
-                    // console.log(holderActivity[j].action.arguments);
-                    const bigValue =  new BigNumber(parseInt(holderActivity[j].action.arguments.functionArgs[0], 16))
-                    const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
-                    // console.log('listing price: ' + bigValue);
-                    // console.log('listing price denominated: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
-                    // console.log('braindead as bigint: ' + braindeadAsBigValue);
+            console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
+            for(const holder of colHolders) {
+            // colHolders.forEach(async (holder, i) => {
+                setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
+                const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess);
+                sleep(500);
+                currentRequest++;
+                // console.log('API for: ' + holder.address);
+                let txHashList : string[] = [];
+                if(holderActivity.length != 0) {
+                    // console.log('data.length not equal 0: ' + holderActivity.length);
+                    // console.log(holderActivity);
+                    // console.log('init number of deadbrain listings ');
+                    let local_brainDeadListings: number = 0;
+                    for(let j = 0; j < holderActivity.length; j++)
+                    {
+                        // console.log(holderActivity[j].action.arguments);
+                        const bigValue =  new BigNumber(parseInt(holderActivity[j].action.arguments.functionArgs[0], 16))
+                        const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
+                        // console.log('listing price: ' + bigValue);
+                        // console.log('listing price denominated: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
+                        // console.log('braindead as bigint: ' + braindeadAsBigValue);
 
-                    if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
-                        // console.log('pushing braindead txHash ' + holderActivity[j].txHash);
+                        if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
+                            // console.log('pushing braindead txHash ' + holderActivity[j].txHash);
 
-                        txHashList.push(holderActivity[j].txHash);
-                        local_brainDeadListings = local_brainDeadListings + 1;
-                        if(braindeadList.length == 0){
-                            braindeadList.push({
-                                address: holder.address,
-                                brainDeadListings: local_brainDeadListings,
-                                brainDeadTxHashes: txHashList
-                            })
-                        }
-                        else{
-                            var idx = -1;
-                            idx = braindeadList.findIndex(item => item.address === holder.address);
-                            if(idx != -1){
-                            braindeadList[idx].brainDeadTxHashes = txHashList;
-                            braindeadList[idx].brainDeadListings = local_brainDeadListings;
-                            }
-                            else {
-                            braindeadList.push({
-                                address: holder.address,
-                                brainDeadListings: local_brainDeadListings,
-                                brainDeadTxHashes: txHashList
+                            txHashList.push(holderActivity[j].txHash);
+                            local_brainDeadListings = local_brainDeadListings + 1;
+                            if(braindeadList.length == 0){
+                                braindeadList.push({
+                                    address: holder.address,
+                                    brainDeadListings: local_brainDeadListings,
+                                    brainDeadTxHashes: txHashList
                                 })
+                            }
+                            else{
+                                var idx = -1;
+                                idx = braindeadList.findIndex(item => item.address === holder.address);
+                                if(idx != -1){
+                                braindeadList[idx].brainDeadTxHashes = txHashList;
+                                braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                }
+                                else {
+                                braindeadList.push({
+                                    address: holder.address,
+                                    brainDeadListings: local_brainDeadListings,
+                                    brainDeadTxHashes: txHashList
+                                    })
+                                }
                             }
                         }
                     }
                 }
             }
+            // })
+            setApiProcessing(false);
+            setApiProgress(100);
+            console.log('BrainDeadList');
+            console.log(braindeadList);
+            setBDListState(braindeadList);
         }
-        // })
-        setApiProcessing(false);
-        setApiProgress(100);
-        console.log('BrainDeadList');
-        console.log(braindeadList);
-        setBDListState(braindeadList);
+        catch(error) {
+            console.log(error)
+        }
     }
 
     return (
@@ -265,7 +270,7 @@ export default function Braindead() {
                             {/* {reqResultState.map((item: any, index: number) => { */}
                             {bdListState.map((item: any, index: number) => {
                                 return (
-                                    <tr>
+                                    <tr key={item.address}>
                                         {renderSwitch(item.address)}
                                         <td className="border border-slate-600 text-center text-sm">{item.brainDeadListings}</td>
                                         <td className="border border-slate-600 text-center text-sm">
@@ -274,7 +279,7 @@ export default function Braindead() {
                                                     {item.brainDeadTxHashes != null ? (
                                                         item.brainDeadTxHashes.map((txHash: string) => {
                                                             return (
-                                                                <li>
+                                                                <li key={txHash}>
                                                                     <a 
                                                                         className="hover:underline text-blue-600" 
                                                                         target="_blank" 

@@ -26,7 +26,15 @@ export default async function handler(
     '&after=' + req.body.startDate
   )
   // console.log(response);
-    const data = await response.json();
-    // console.log(data);
-    res.status(200).json(data);
+    if(response.status == 200) {
+      const data = await response.json();
+      // console.log(data);
+      res.status(200).json(data);
+    }
+    else {
+      res.status(500).json('API request failed');
+
+    }
+
+    
 }
