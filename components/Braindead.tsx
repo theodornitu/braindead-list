@@ -99,17 +99,16 @@ export default function Braindead() {
             // console.log(colHolders);
 
             //debug
-            // let temp = colHolders.splice(0,60);
+            // let temp = colHolders.splice(0,25);
             // colHolders = temp;
             // console.log('colHolders splice: ' + colHolders.length)
             //end of debug
 
             console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
             for(const holder of colHolders) {
-            // colHolders.forEach(async (holder, i) => {
                 setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
                 const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess);
-                sleep(500);
+                sleep(550);
                 currentRequest++;
                 // console.log('API for: ' + holder.address);
                 let txHashList : string[] = [];
@@ -251,57 +250,51 @@ export default function Braindead() {
                     </li>
                 </ul>
             </div>
-            
-            {apiProcessing ? (
-                <img 
-                    src={imgUrl} 
-                    className="rounded-4 shadow-soft-xl backdrop-blur-2xl backdrop-saturate-200 w-120 h-120 sm-max:w-80 sm-max:h-80"
-                ></img>
-                ) : (
-                    <table className="border-collapse border border-slate-500 ...">
-                        <thead>
-                            <tr className="text-left">
-                            <th className="border border-slate-600 px-4 bg-slate-100 ...">Address</th>
-                            <th className="border border-slate-600 px-4 bg-slate-100 ...">Listings</th>
-                            <th className="border border-slate-600 px-4 bg-slate-100 ...">Hashes</th>
-                            </tr>
-                        </thead>
-                        <tbody >
-                            {/* {reqResultState.map((item: any, index: number) => { */}
-                            {bdListState.map((item: any, index: number) => {
-                                return (
-                                    <tr key={item.address}>
-                                        {renderSwitch(item.address)}
-                                        <td className="border border-slate-600 text-center text-sm">{item.brainDeadListings}</td>
-                                        <td className="border border-slate-600 text-center text-sm">
-                                            <ul>
-                                                
-                                                    {item.brainDeadTxHashes != null ? (
-                                                        item.brainDeadTxHashes.map((txHash: string) => {
-                                                            return (
-                                                                <li key={txHash}>
-                                                                    <a 
-                                                                        className="hover:underline text-blue-600" 
-                                                                        target="_blank" 
-                                                                        rel="noreferrer" 
-                                                                        href={explorerTransactions + txHash}
-                                                                    >
-                                                                        {txHash.substring(0,3) + "\u2026" + txHash.substring(txHash.length-3,txHash.length)}
-                                                                    </a>
-                                                                </li>
-                                                            )
-                                                        })
-                                                    ) : (
-                                                        <></>
-                                                    )}
-                                            </ul>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-            )} 
+            <div className="pb-10 pt-1">
+                <table className="border-collapse border border-slate-500">
+                    <thead>
+                        <tr className="text-left">
+                        <th className="border border-slate-600 px-4 bg-slate-100 ...">Address</th>
+                        <th className="border border-slate-600 px-4 bg-slate-100 ...">Listings</th>
+                        <th className="border border-slate-600 px-4 bg-slate-100 ...">Hashes</th>
+                        </tr>
+                    </thead>
+                    <tbody >
+                        {/* {reqResultState.map((item: any, index: number) => { */}
+                        {bdListState.map((item: any, index: number) => {
+                            return (
+                                <tr key={item.address}>
+                                    {renderSwitch(item.address)}
+                                    <td className="border border-slate-600 text-center text-sm">{item.brainDeadListings}</td>
+                                    <td className="border border-slate-600 text-center text-sm">
+                                        <ul>
+                                            
+                                                {item.brainDeadTxHashes != null ? (
+                                                    item.brainDeadTxHashes.map((txHash: string) => {
+                                                        return (
+                                                            <li key={txHash}>
+                                                                <a 
+                                                                    className="hover:underline text-blue-600" 
+                                                                    target="_blank" 
+                                                                    rel="noreferrer" 
+                                                                    href={explorerTransactions + txHash}
+                                                                >
+                                                                    {txHash.substring(0,3) + "\u2026" + txHash.substring(txHash.length-3,txHash.length)}
+                                                                </a>
+                                                            </li>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <></>
+                                                )}
+                                        </ul>
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </>
     )
 }

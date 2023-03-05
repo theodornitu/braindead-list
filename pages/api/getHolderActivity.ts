@@ -16,6 +16,14 @@ export default async function handler(
   // console.log('endDate: ' + req.body.endDate);
   // console.log('startDate: ' + req.body.startDate);
 
+  // console.log('https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/transactions?' + 
+  //   'size=' + req.body.scSearchSize +
+  //   '&sender=' + req.body.holderAddress + 
+  //   '&status=' + req.body.scTxStatus + 
+  //   '&function=' + req.body.scFnSearch + 
+  //   '&before=' + req.body.endDate + 
+  //   '&after=' + req.body.startDate);
+
   const response = await fetch(
     'https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/transactions?' + 
     'size=' + req.body.scSearchSize +
@@ -25,14 +33,15 @@ export default async function handler(
     '&before=' + req.body.endDate + 
     '&after=' + req.body.startDate
   )
-  // console.log(response);
+  // console.log("Response status: " + response.status);
+  // console.log("Response text: " + response.statusText)
     if(response.status == 200) {
       const data = await response.json();
       // console.log(data);
       res.status(200).json(data);
     }
     else {
-      res.status(500).json('API request failed');
+      res.status(response.status).json({ status: response.statusText});
 
     }
 

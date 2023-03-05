@@ -32,15 +32,30 @@ export async function getCollectionOwners(cIdentifier: string): Promise<{address
     const cSize = await getCollectionSize(cIdentifier);
     console.log('cSize: ' + cSize);
 
-    const response = await fetch('/api/getCollectionHolders', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ collectionIdentifier: cIdentifier, collectionType: cType, collectionSize: cSize }),
-    });
-    const data = await response.json();
-    return data;
+    if (cType == 'SemiFungibleESDT') {
+        const response = await fetch('/api/getCollectionSftHolders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ collectionIdentifier: cIdentifier, collectionType: cType, collectionSize: cSize }),
+        });
+        const data = await response.json();
+        return data;
+    }
+    else if (cType == 'NonFungibleESDT') {
+        const response = await fetch('/api/getCollectionNftHolders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ collectionIdentifier: cIdentifier, collectionType: cType, collectionSize: cSize }),
+        });
+        const data = await response.json();
+        return data;
+    }
+    else
+        return [{address: '', balance: 0}];
 };
 
 export async function getHolderActivity(holderAddress: string, cIdentifier: string, startDate: number, endDate: number, scFnSearch: string, scSearchSize: number, scTxStatus: string): Promise<{type: string, txHash: string, action: {arguments: {functionArgs: string[]}}}[]> {
