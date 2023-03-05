@@ -15,12 +15,14 @@ export default async function handler(
       const data = await response.json();
       // console.log('SFT');
       res.status(200).json({ result: data});
+      break;
       }
     case 'NonFungibleESDT':{
       const response = await fetch('https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/nfts/count')
       const data = await response.json();
       // console.log('NFT');
       res.status(200).json({ result: data});
+      break;
       } 
     }
 

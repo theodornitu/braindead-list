@@ -33,7 +33,7 @@ export async function getCollectionOwners(cIdentifier: string): Promise<{address
     console.log('cSize: ' + cSize);
 
     if (cType == 'SemiFungibleESDT') {
-        const response = await fetch('/api/getCollectionSftHolders', {
+        const response = await fetch('/api/getCollectionNftHolders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
