@@ -30,6 +30,8 @@ export default async function handler(
               computedCollection.push({address: data[i].address, balance: data[i].balance});
       }
     }
+    computedCollection.sort((a: any, b: any) => b.balance - a.balance);
+
     // console.log("ComputedCollection final");
     // console.log(computedCollection);
     return res.json(computedCollection);

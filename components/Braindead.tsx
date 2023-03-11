@@ -1,101 +1,58 @@
-import { render } from "@headlessui/react/dist/utils/render";
+// React stuff
 import { useEffect, useState } from "react";
 import BigNumber from "bignumber.js";
-import {getCollectionType, getCollectionSize, getCollectionOwners, getHolderActivity} from '../lib/mvx';
+
+// My mvx lib
+import {getCollectionType, getCollectionSize, getCollectionOwners, getHolderActivity, checkHolderActivity} from '../lib/mvx'; //API endpoints
+import {XoxnoAddress, FrameItAddress, mferAddress, minterAddress} from '../lib/mvx'; //consts
+import {apiAddr, reqCollection, reqNfts, explorerTransactions} from '../lib/mvx'; //consts
+import {renderSwitch} from '../lib/mvx'; //methods
+
+// My components
 import ProgressBar from '../components/helpers/ProgressBar';
+
+// Misc lib
+import {sleep, map} from '../lib/misc';
+
 
 export default function Braindead() {
 
-    //xoxno api 
-    const xoCollectionAPI = 'https://proxy-api.xoxno.com/getCollectionOwners/'
-
-    //elrond api
-    const apiAddr = 'https://api.multiversx.com/';
-    const reqCollection = 'https://api.multiversx.com/collections/';
-    const reqNfts = 'https://api.multiversx.com/nfts/'
-    const explorerTransactions = 'https://explorer.multiversx.com/transactions/'
-
-    //addresses
-    const FrameItAddress = 'erd1qqqqqqqqqqqqqpgq705fxpfrjne0tl3ece0rrspykq88mynn4kxs2cg43s';
-    const XoxnoAddress = 'erd1qqqqqqqqqqqqqpgq6wegs2xkypfpync8mn2sa5cmpqjlvrhwz5nqgepyg8';
-    const mferAddress = 'erd1hwhxmzrw6kkv793309dyxq2rstu4kcgup7lddtfeq7n65vpec6gqdzqqyp';
-    const minterAddress = 'erd1qqqqqqqqqqqqqpgqdtq5ckfjlskcs5sf28dulh29hzapf00tc6gqaefu9c';
-
-    // const cIdentif = 'SALAMIPASS-57afe8';
+    // ----------------- API request consts for search
     const scSearchSize = 100; //for max tx req size when searching for braindead
-    const scFnSearch_FrameIt = 'auctionToken';
     const txResultSuccess = 'success';
 
+    const scFnSearch_FrameIt = 'auctionToken'; //frameit SC method
+    const scFnSearch_Xoxno = 'listing'; //xoxno SC method
+    // -----------------
 
+    // ----------------- States & Hooks
+    // collection related
     const [cIdentif, setCIdentif] = useState('');
-    const [apiProcessing, setApiProcessing] = useState(false);
-    const [apiProgress, setApiProgress] = useState(0);
 
+    // ui related
+    const [apiProgress, setApiProgress] = useState(0);
+    const [bdListState, setBDListState] = useState([{}]);
+
+    // back end related
     const [startDate, setStartDate] = useState(new Date(2023,0,1));
     const [endDate, setEndDate] = useState(new Date(2023,0,2));
     const [braindeadThreshold, setBraindeadThreshold] = useState('');
+    // -----------------
 
+    // ----------------- Variables for intermidiate results computation
+    // dates
     var stringStartDate;
     var stringEndDate;
-
-    const [imgUrl, setImgUrl] = useState('');
-
-    let computedCollection: {address: string, balance: number}[] = [];
-
     let braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[] = [];
-    const [bdListState, setBDListState] = useState([{}]);
-
-    const renderSwitch = (address: string | undefined) => {
-        switch (address) {
-            case XoxnoAddress:
-                return (<td className="border border-slate-600 pl-4 pr-8 text-sm">XOXNO: Marketplace</td>);
-            case FrameItAddress:
-                return (<td className="border border-slate-600 pl-4 pr-8 text-sm">FrameIt: Marketplace</td>);
-            case mferAddress:
-                return (<td className="border border-slate-600 pl-4 pr-8 text-sm">mfer: salami boss</td>);
-            case minterAddress:
-                return (<td className="border border-slate-600 pl-4 pr-8 text-sm">FrameIt Minter: Smart contract</td>);
-            default:
-                return (<td className="border border-slate-600 pl-4 pr-8 text-sm">{address}</td>);
-        }
-    }
-
-    function sleep(milliseconds: number) {
-        const date = Date.now();
-        let currentDate = null;
-        do {
-          currentDate = Date.now();
-        } while (currentDate - date < milliseconds);
-      }
-
-    // for debug
-    async function doAsync() {
-        const colType = await getCollectionType('BLXC-4311ab');
-        console.log(colType);
-        const colSize = await getCollectionSize('BLXC-4311ab');
-        console.log(colSize);
-        const colHolders = await getCollectionOwners('BLXC-4311ab');
-        console.log(colHolders);
-        const holderActivity = await getHolderActivity('erd10gzmysunqapyqxc4v0hp4h98yyyry3z4zeev5qapvpsvx3ztvjwqnhsxvp','BLXC-4311ab',1675209600,1677628800,'auctionToken',100,'success');
-        console.log(holderActivity);
-    }
-
-    function clamp(input: number, min: number, max: number): number {
-        return input < min ? min : input > max ? max : input;
-    }
-    function map(current: number, in_min: number, in_max: number, out_min: number, out_max: number): number {
-        const mapped: number = ((current - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
-        return clamp(mapped, out_min, out_max);
-    }
+    // -----------------
 
     async function callCompute() {
         try {
             //Get collection details
-            setApiProcessing(true);
             setApiProgress(0);
             let currentRequest = 0;
-            console.log('Getting collection holders');
             let colHolders = await getCollectionOwners(cIdentif);
+            // console.log('Collection holders');
             // console.log(colHolders);
 
             //debug
@@ -106,61 +63,18 @@ export default function Braindead() {
 
             console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
             for(const holder of colHolders) {
+
                 setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
+                currentRequest++;
+
                 const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess);
                 sleep(550);
-                currentRequest++;
-                // console.log('API for: ' + holder.address);
-                let txHashList : string[] = [];
-                if(holderActivity.length != 0) {
-                    // console.log('data.length not equal 0: ' + holderActivity.length);
-                    // console.log(holderActivity);
-                    // console.log('init number of deadbrain listings ');
-                    let local_brainDeadListings: number = 0;
-                    for(let j = 0; j < holderActivity.length; j++)
-                    {
-                        // console.log(holderActivity[j].action.arguments);
-                        const bigValue =  new BigNumber(parseInt(holderActivity[j].action.arguments.functionArgs[0], 16))
-                        const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
-                        // console.log('listing price: ' + bigValue);
-                        // console.log('listing price denominated: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
-                        // console.log('braindead as bigint: ' + braindeadAsBigValue);
 
-                        if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
-                            // console.log('pushing braindead txHash ' + holderActivity[j].txHash);
-
-                            txHashList.push(holderActivity[j].txHash);
-                            local_brainDeadListings = local_brainDeadListings + 1;
-                            if(braindeadList.length == 0){
-                                braindeadList.push({
-                                    address: holder.address,
-                                    brainDeadListings: local_brainDeadListings,
-                                    brainDeadTxHashes: txHashList
-                                })
-                            }
-                            else{
-                                var idx = -1;
-                                idx = braindeadList.findIndex(item => item.address === holder.address);
-                                if(idx != -1){
-                                braindeadList[idx].brainDeadTxHashes = txHashList;
-                                braindeadList[idx].brainDeadListings = local_brainDeadListings;
-                                }
-                                else {
-                                braindeadList.push({
-                                    address: holder.address,
-                                    brainDeadListings: local_brainDeadListings,
-                                    brainDeadTxHashes: txHashList
-                                    })
-                                }
-                            }
-                        }
-                    }
-                }
+                braindeadList = await checkHolderActivity(braindeadList, holder, holderActivity, braindeadThreshold);
             }
-            // })
-            setApiProcessing(false);
             setApiProgress(100);
             console.log('BrainDeadList');
+            braindeadList.sort((a: any, b: any) => b.brainDeadListings - a.brainDeadListings)
             console.log(braindeadList);
             setBDListState(braindeadList);
         }

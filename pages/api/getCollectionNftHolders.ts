@@ -8,31 +8,39 @@ export default async function handler(
   res: NextApiResponse
 ) {
 
-  // console.log('Entering API');
-  // console.log('Collection size: ' + req.body.collectionSize);
-  // console.log('Collection identifier: ' + req.body.collectionIdentifier);
+  console.log('Entering API');
+  console.log('Collection size: ' + req.body.collectionSize);
+  console.log('Collection identifier: ' + req.body.collectionIdentifier);
+  console.log('https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/accounts?size=' + req.body.collectionSize)
 
   const response = await fetch('https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/accounts?size=' + req.body.collectionSize)
+  // console.log(response);
   const data = await response.json();
+  // console.log(data);
+  // console.log(data[0]);
 
-  for(let i=0; i< req.body.collectionSize; i++){
-    if(computedCollection.length == 0){
-      // console.log('Address to be inserted: ' + data[i].address);
-      // console.log('Balance to be inserted: ' + data[i].balance);
-      computedCollection.push({address: data[i].address, balance: data[i].balance});
+  if(data.length != 0) {
+    for(let i=0; i< req.body.collectionSize; i++){
+      if(computedCollection.length == 0){
+        // console.log('Address to be inserted: ' + data[i].address);
+        // console.log('Balance to be inserted: ' + data[i].balance);
+        computedCollection.push({address: data[i].address, balance: data[i].balance});
+      }
+      else {
+          var idx = -1
+          idx = computedCollection.findIndex(item => item.address === data[i].address)
+          if(idx != -1)
+              computedCollection[idx].balance = +computedCollection[idx].balance + +1;
+          else
+              computedCollection.push({address: data[i].address, balance: data[i].balance});
+      }
     }
-    else {
-        var idx = -1
-        idx = computedCollection.findIndex(item => item.address === data[i].address)
-        if(idx != -1)
-            computedCollection[idx].balance = +computedCollection[idx].balance + +1;
-        else
-            computedCollection.push({address: data[i].address, balance: data[i].balance});
-    }
+    computedCollection.sort((a: any, b: any) => b.balance - a.balance);
+    // console.log("ComputedCollection final");
+    // console.log(computedCollection);
+    res.status(200).json(computedCollection);
   }
-  computedCollection.sort((a: any, b: any) => b.balance - a.balance);
-  // console.log("ComputedCollection final");
-  // console.log(computedCollection);
-
-  res.status(200).json(computedCollection);
+  else {
+    res.status(400).json({});
+  }
 }
