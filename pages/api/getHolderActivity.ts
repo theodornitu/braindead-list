@@ -15,6 +15,9 @@ export default async function handler(
   // console.log('scFnSearch: ' + req.body.scFnSearch);
   // console.log('endDate: ' + req.body.endDate);
   // console.log('startDate: ' + req.body.startDate);
+  // console.log('withScResults:' + req.body.withScResults.toString()); 
+  // console.log('withOperations:' + req.body.withOperations.toString());
+  // console.log('withLogs:' + req.body.withLogs.toString());
 
   // console.log('https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/transactions?' + 
   //   'size=' + req.body.scSearchSize +
@@ -22,7 +25,10 @@ export default async function handler(
   //   '&status=' + req.body.scTxStatus + 
   //   '&function=' + req.body.scFnSearch + 
   //   '&before=' + req.body.endDate + 
-  //   '&after=' + req.body.startDate);
+  //   '&after=' + req.body.startDate +
+  //   '&withScResults=' + req.body.withScResults.toString() + 
+  //   '&withOperations=' + req.body.withOperations.toString() + 
+  //   '&withLogs=' + req.body.withLogs.toString())
 
   const response = await fetch(
     'https://api.multiversx.com/collections/' + req.body.collectionIdentifier + '/transactions?' + 
@@ -31,8 +37,13 @@ export default async function handler(
     '&status=' + req.body.scTxStatus + 
     '&function=' + req.body.scFnSearch + 
     '&before=' + req.body.endDate + 
-    '&after=' + req.body.startDate
+    '&after=' + req.body.startDate +
+    '&withScResults=' + req.body.withScResults.toString() + 
+    '&withOperations=' + req.body.withOperations.toString() + 
+    '&withLogs=' + req.body.withLogs.toString()
   )
+
+  // console.log("Response: " + response);
   // console.log("Response status: " + response.status);
   // console.log("Response text: " + response.statusText)
     if(response.status == 200) {
@@ -42,8 +53,5 @@ export default async function handler(
     }
     else {
       res.status(response.status).json({ status: response.statusText});
-
     }
-
-    
 }

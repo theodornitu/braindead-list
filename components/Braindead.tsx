@@ -18,7 +18,7 @@ import {sleep, map} from '../lib/misc';
 export default function Braindead() {
 
     // ----------------- API request consts for search
-    const scSearchSize = 100; //for max tx req size when searching for braindead
+    const scSearchSize = 50; //for max tx req size when searching for braindead
     const txResultSuccess = 'success';
 
     const scFnSearch_FrameIt = 'auctionToken'; //frameit SC method
@@ -52,8 +52,8 @@ export default function Braindead() {
             setApiProgress(0);
             let currentRequest = 0;
             let colHolders = await getCollectionOwners(cIdentif);
-            // console.log('Collection holders');
-            // console.log(colHolders);
+            console.log('Collection holders');
+            console.log(colHolders);
 
             //debug
             // let temp = colHolders.splice(0,25);
@@ -67,10 +67,18 @@ export default function Braindead() {
                 setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
                 currentRequest++;
 
-                const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess);
+                // Check FrameIt listings
+                const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess, false, false, false);
+                // console.log(holderActivity);
+                sleep(550);
+                const holderActivityXo = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_Xoxno,scSearchSize,txResultSuccess, true, true, true);
+                // console.log(holderActivityXo);
                 sleep(550);
 
-                braindeadList = await checkHolderActivity(braindeadList, holder, holderActivity, braindeadThreshold);
+                const holderActivityMerged = [holderActivity, holderActivityXo];
+                // console.log(holderActivityMerged);
+
+                braindeadList = await checkHolderActivity(braindeadList, holder, holderActivityMerged, braindeadThreshold);
             }
             setApiProgress(100);
             console.log('BrainDeadList');

@@ -1,5 +1,6 @@
 import { start } from "repl";
 import BigNumber from "bignumber.js";
+import {base64Decode, base64ToHex, hexToBigInt, hexToNumber} from "../lib/misc"
 
 // ----------------- API endpoints
 //xoxno
@@ -77,14 +78,23 @@ export async function getCollectionOwners(cIdentifier: string): Promise<{address
         return [{address: '', balance: 0}];
 };
 
-export async function getHolderActivity(holderAddress: string, cIdentifier: string, startDate: number, endDate: number, scFnSearch: string, scSearchSize: number, scTxStatus: string): Promise<{type: string, txHash: string, action: {arguments: {functionArgs: string[]}}}[]> {
+export async function getHolderActivity(holderAddress: string, cIdentifier: string, startDate: number, endDate: number, scFnSearch: string, scSearchSize: number, scTxStatus: string, withScResults: boolean, withOperations: boolean, withLogs: boolean): Promise<{type: string, txHash: string, action: {arguments: {functionArgs: string[]}}}[]> {
 
     const response = await fetch('/api/getHolderActivity', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ holderAddress: holderAddress, collectionIdentifier: cIdentifier, startDate: startDate, endDate: endDate, scFnSearch: scFnSearch, scSearchSize: scSearchSize, scTxStatus: scTxStatus }),
+        body: JSON.stringify({  holderAddress: holderAddress, 
+                                collectionIdentifier: cIdentifier, 
+                                startDate: startDate, 
+                                endDate: endDate, 
+                                scFnSearch: scFnSearch, 
+                                scSearchSize: scSearchSize, 
+                                scTxStatus: scTxStatus, 
+                                withScResults: withScResults, 
+                                withOperations: withOperations, 
+                                withLogs: withLogs }),
     });
     const data = await response.json();
     return data;
@@ -107,47 +117,116 @@ export const renderSwitch = (address: string | undefined) => {
 
 export async function checkHolderActivity (braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[], holder: {address: string, balance: number}, holderActivity: any, braindeadThreshold: string): Promise<({address: string, brainDeadListings: number, brainDeadTxHashes: string[]}[])> {
     let txHashList : string[] = [];
-
+    // console.log('Holder activity: ' + holderActivity.length);
     // console.log('API for: ' + holder.address);
+    // Expected minimum length = 1 (1 => listings only on one marketplace, 2 => listings on both marketplaces)
     if(holderActivity.length != 0) {
         // console.log('data.length not equal 0: ' + holderActivity.length);
         // console.log(holderActivity);
         // console.log('init number of deadbrain listings ');
+
         let local_brainDeadListings: number = 0;
-        for(let j = 0; j < holderActivity.length; j++)
-        {
-            // console.log(holderActivity[j].action.arguments);
-            const bigValue =  new BigNumber(parseInt(holderActivity[j].action.arguments.functionArgs[0], 16))
-            const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
-            // console.log('listing price: ' + bigValue);
-            // console.log('listing price denominated: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
-            // console.log('braindead as bigint: ' + braindeadAsBigValue);
+        const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
+        // console.log('braindead as bigint: ' + braindeadAsBigValue);
 
-            if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
-                // console.log('pushing braindead txHash ' + holderActivity[j].txHash);
+        if(holderActivity[0].length != 0){
+            //Step 1: FrameIt (holderActivity[0] is holding FrameIt listings)
+            for(let j = 0; j < holderActivity[0].length; j++){
+                // console.log(holderActivity[j].action.arguments);
 
-                txHashList.push(holderActivity[j].txHash);
-                local_brainDeadListings = local_brainDeadListings + 1;
-                if(braindeadList.length == 0){
-                    braindeadList.push({
-                        address: holder.address,
-                        brainDeadListings: local_brainDeadListings,
-                        brainDeadTxHashes: txHashList
-                    })
+                const bigValue =  new BigNumber(parseInt(holderActivity[0][j].action.arguments.functionArgs[0], 16))
+                console.log('Listed on FrameIt for: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
+
+                if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
+                    // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
+                    txHashList.push(holderActivity[0][j].txHash);
+                    local_brainDeadListings = local_brainDeadListings + 1;
+                    if(braindeadList.length == 0){
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
+                        })
+                    }
+                    else{
+                        var idx = -1;
+                        idx = braindeadList.findIndex(item => item.address === holder.address);
+                        if(idx != -1){
+                        braindeadList[idx].brainDeadTxHashes = txHashList;
+                        braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                        }
+                        else {
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
+                            })
+                        }
+                    }
+                }
+            }
+        }
+        if(holderActivity[1].length != 0){
+            //Step 2: Xoxno (holderActivity[1] is holding Xoxno listings)
+            for(let j = 0; j < holderActivity[1].length; j++){
+                console.log(holderActivity[1][j]);
+                console.log('events: ' + holderActivity[1][j].logs.events.length);
+
+                var bigValue = new BigNumber(0); 
+
+                //Go through logs and check for listing price
+                //Part1: check if typical tx logs (with 3 event logs that contain 'listing' topics)
+                if(holderActivity[1][j].logs.events.length > 1){
+                    // console.log('case1');
+                    bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[1].topics[6])));
                 }
                 else{
-                    var idx = -1;
-                    idx = braindeadList.findIndex(item => item.address === holder.address);
-                    if(idx != -1){
-                    braindeadList[idx].brainDeadTxHashes = txHashList;
-                    braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                    // console.log('case2');
+                    //Part2: check results object for 'listing' topics
+                    for(let resultIterator = 0; resultIterator < holderActivity[1][j].results.length; resultIterator++){
+                        // console.log('has logs? ' + holderActivity[1][j].results[resultIterator].hasOwnProperty('logs'));
+                        if(holderActivity[1][j].results[resultIterator].hasOwnProperty('logs')){
+                            // console.log('events:' + holderActivity[1][j].results[resultIterator].logs.events.length);
+                            for(let eventIterator = 0; eventIterator < holderActivity[1][j].results[resultIterator].logs.events.length; eventIterator++){
+                                // console.log('has identifier?: ' + holderActivity[1][j].results[resultIterator].logs.events[eventIterator].hasOwnProperty('identifier'));
+                                if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].hasOwnProperty('identifier')){
+                                    if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].identifier == "listing"){
+                                        // console.log('Found listing');
+                                        console.log(holderActivity[1][j].results[resultIterator].logs.events[eventIterator]);
+                                        bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].topics[6])));
+                                    }
+                                }
+                            }
+                        }
                     }
-                    else {
-                    braindeadList.push({
-                        address: holder.address,
-                        brainDeadListings: local_brainDeadListings,
-                        brainDeadTxHashes: txHashList
+                }
+                console.log('Listed on Xoxno for: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
+
+                if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
+                    // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
+                    txHashList.push(holderActivity[1][j].txHash);
+                    local_brainDeadListings = local_brainDeadListings + 1;
+                    if(braindeadList.length == 0){
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
                         })
+                    }
+                    else{
+                        var idx = -1;
+                        idx = braindeadList.findIndex(item => item.address === holder.address);
+                        if(idx != -1){
+                        braindeadList[idx].brainDeadTxHashes = txHashList;
+                        braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                        }
+                        else {
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
+                            })
+                        }
                     }
                 }
             }
