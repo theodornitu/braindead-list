@@ -109,7 +109,7 @@ export default function Braindead() {
                     className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
             </div>
             <div className="w-full">
-                <label htmlFor="email"
+                <label htmlFor="email" 
                             className="block text-sm font-medium text-gray-700"
                     >
                         activity period
