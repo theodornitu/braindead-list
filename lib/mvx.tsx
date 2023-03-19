@@ -172,13 +172,48 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                 console.log(holderActivity[1][j]);
                 console.log('events: ' + holderActivity[1][j].logs.events.length);
 
-                var bigValue = new BigNumber(0); 
+                var bigValue = new BigNumber(999); 
+                var listPrice = new BigNumber(999);
 
                 //Go through logs and check for listing price
                 //Part1: check if typical tx logs (with 3 event logs that contain 'listing' topics)
                 if(holderActivity[1][j].logs.events.length > 1){
                     // console.log('case1');
-                    bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[1].topics[6])));
+                    if(holderActivity[1][j].logs.events.length <= 3){
+                        bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[1].topics[6])));
+                        listPrice = bigValue.shiftedBy(-18).decimalPlaces(4);
+                        console.log('Found less than 3 <events> => Normal listing for: ' + listPrice);
+                    }
+                    else{
+                        let foundListing: boolean = false;
+                        console.log('Searching through ' + holderActivity[1][j].logs.events.length + ' <events>');
+                        for(let k = 0; k < holderActivity[1][j].logs.events.length; k++){
+                            if(holderActivity[1][j].logs.events[k].identifier == 'listing'){
+                                let tempBigValue = new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[k].topics[6])));
+                                listPrice =  new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
+                                foundListing = true;
+                                console.log('Found listing on Xoxno for: ' + listPrice);
+                            }
+                        }
+                        if(foundListing == false){
+                            console.log('Listing not found within <logs> section, searching in <results>');
+                            if(holderActivity[1][j].hasOwnProperty('results')){
+                                console.log('<results> exists, searching through ' + holderActivity[1][j].results.length + ' <results>')
+                                for(let k = 0; k < holderActivity[1][j].results.length; k++){
+                                    if(holderActivity[1][j].results[k].hasOwnProperty('logs')){
+                                        console.log('Searching through ' + holderActivity[1][j].results[k].logs.events.length + ' <events> within <results>')
+                                        for(let o = 0; o < holderActivity[1][j].results[k].logs.events.length; o++){
+                                            if(holderActivity[1][j].results[k].logs.events[o].identifier == 'listing'){
+                                                let tempBigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[k].logs.events[o].topics[6])));
+                                                listPrice = new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
+                                                console.log('Found listing on Xoxno for: ' + listPrice);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 else{
                     // console.log('case2');
@@ -193,16 +228,17 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                                     if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].identifier == "listing"){
                                         // console.log('Found listing');
                                         console.log(holderActivity[1][j].results[resultIterator].logs.events[eventIterator]);
-                                        bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].topics[6])));
+                                        let tempBigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].topics[6])));
+                                        listPrice = new BigNumber(tempBigValue.shiftedBy(-18).decimalPlaces(4))
                                     }
                                 }
                             }
                         }
                     }
                 }
-                console.log('Listed on Xoxno for: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
+                console.log('Listed on Xoxno for: ' + listPrice);
 
-                if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
+                if(listPrice < braindeadAsBigValue){
                     // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
                     txHashList.push(holderActivity[1][j].txHash);
                     local_brainDeadListings = local_brainDeadListings + 1;
