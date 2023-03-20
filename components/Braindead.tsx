@@ -70,10 +70,10 @@ export default function Braindead() {
                 // Check FrameIt listings
                 const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess, false, false, false);
                 // console.log(holderActivity);
-                sleep(550);
+                sleep(600);
                 const holderActivityXo = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_Xoxno,scSearchSize,txResultSuccess, true, true, true);
                 // console.log(holderActivityXo);
-                sleep(550);
+                sleep(600);
 
                 const holderActivityMerged = [holderActivity, holderActivityXo];
                 // console.log(holderActivityMerged);

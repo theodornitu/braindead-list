@@ -135,9 +135,9 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                 // console.log(holderActivity[j].action.arguments);
 
                 const bigValue =  new BigNumber(parseInt(holderActivity[0][j].action.arguments.functionArgs[0], 16))
-                console.log('Listed on FrameIt for: ' + bigValue.shiftedBy(-18).decimalPlaces(3));
+                console.log('Listed on FrameIt for: ' + bigValue.shiftedBy(-18).decimalPlaces(4));
 
-                if(bigValue.shiftedBy(-18).decimalPlaces(3) < braindeadAsBigValue){
+                if(bigValue.shiftedBy(-18).decimalPlaces(4) < braindeadAsBigValue){
                     // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
                     txHashList.push(holderActivity[0][j].txHash);
                     local_brainDeadListings = local_brainDeadListings + 1;
@@ -169,6 +169,7 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
         if(holderActivity[1].length != 0){
             //Step 2: Xoxno (holderActivity[1] is holding Xoxno listings)
             for(let j = 0; j < holderActivity[1].length; j++){
+                console.log('Activity');
                 console.log(holderActivity[1][j]);
                 console.log('events: ' + holderActivity[1][j].logs.events.length);
 
@@ -178,11 +179,37 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                 //Go through logs and check for listing price
                 //Part1: check if typical tx logs (with 3 event logs that contain 'listing' topics)
                 if(holderActivity[1][j].logs.events.length > 1){
-                    // console.log('case1');
                     if(holderActivity[1][j].logs.events.length <= 3){
                         bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[1].topics[6])));
                         listPrice = bigValue.shiftedBy(-18).decimalPlaces(4);
                         console.log('Found less than 3 <events> => Normal listing for: ' + listPrice);
+                        if(listPrice < braindeadAsBigValue){
+                            console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                            txHashList.push(holderActivity[1][j].txHash);
+                            local_brainDeadListings = local_brainDeadListings + 1;
+                            if(braindeadList.length == 0){
+                                braindeadList.push({
+                                    address: holder.address,
+                                    brainDeadListings: local_brainDeadListings,
+                                    brainDeadTxHashes: txHashList
+                                })
+                            }
+                            else{
+                                var idx = -1;
+                                idx = braindeadList.findIndex(item => item.address === holder.address);
+                                if(idx != -1){
+                                    braindeadList[idx].brainDeadTxHashes = txHashList;
+                                    braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                }
+                                else {
+                                    braindeadList.push({
+                                        address: holder.address,
+                                        brainDeadListings: local_brainDeadListings,
+                                        brainDeadTxHashes: txHashList
+                                        })
+                                }
+                            }
+                        }
                     }
                     else{
                         let foundListing: boolean = false;
@@ -192,7 +219,34 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                                 let tempBigValue = new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[k].topics[6])));
                                 listPrice =  new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
                                 foundListing = true;
-                                console.log('Found listing on Xoxno for: ' + listPrice);
+                                console.log('Found listing on Xoxno within <events> for: ' + listPrice);
+                                if(listPrice < braindeadAsBigValue){
+                                    console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                                    txHashList.push(holderActivity[1][j].txHash);
+                                    local_brainDeadListings = local_brainDeadListings + 1;
+                                    if(braindeadList.length == 0){
+                                        braindeadList.push({
+                                            address: holder.address,
+                                            brainDeadListings: local_brainDeadListings,
+                                            brainDeadTxHashes: txHashList
+                                        })
+                                    }
+                                    else{
+                                        var idx = -1;
+                                        idx = braindeadList.findIndex(item => item.address === holder.address);
+                                        if(idx != -1){
+                                            braindeadList[idx].brainDeadTxHashes = txHashList;
+                                            braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                        }
+                                        else {
+                                            braindeadList.push({
+                                                address: holder.address,
+                                                brainDeadListings: local_brainDeadListings,
+                                                brainDeadTxHashes: txHashList
+                                                })
+                                        }
+                                    }
+                                }
                             }
                         }
                         if(foundListing == false){
@@ -206,7 +260,34 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                                             if(holderActivity[1][j].results[k].logs.events[o].identifier == 'listing'){
                                                 let tempBigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[k].logs.events[o].topics[6])));
                                                 listPrice = new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
-                                                console.log('Found listing on Xoxno for: ' + listPrice);
+                                                console.log('Found listing on Xoxno within <results> for: ' + listPrice);
+                                                if(listPrice < braindeadAsBigValue){
+                                                    console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                                                    txHashList.push(holderActivity[1][j].txHash);
+                                                    local_brainDeadListings = local_brainDeadListings + 1;
+                                                    if(braindeadList.length == 0){
+                                                        braindeadList.push({
+                                                            address: holder.address,
+                                                            brainDeadListings: local_brainDeadListings,
+                                                            brainDeadTxHashes: txHashList
+                                                        })
+                                                    }
+                                                    else{
+                                                        var idx = -1;
+                                                        idx = braindeadList.findIndex(item => item.address === holder.address);
+                                                        if(idx != -1){
+                                                            braindeadList[idx].brainDeadTxHashes = txHashList;
+                                                            braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                                        }
+                                                        else {
+                                                            braindeadList.push({
+                                                                address: holder.address,
+                                                                brainDeadListings: local_brainDeadListings,
+                                                                brainDeadTxHashes: txHashList
+                                                                })
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -216,55 +297,55 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                     }
                 }
                 else{
-                    // console.log('case2');
-                    //Part2: check results object for 'listing' topics
+                    //Part2: check if tx with no logs (with 1 event that contain 'results'), check results object for 'listing' topics
+                    console.log('tx with 1 event log - last else of the code, results length: ' + holderActivity[1][j].results.length)
                     for(let resultIterator = 0; resultIterator < holderActivity[1][j].results.length; resultIterator++){
                         // console.log('has logs? ' + holderActivity[1][j].results[resultIterator].hasOwnProperty('logs'));
                         if(holderActivity[1][j].results[resultIterator].hasOwnProperty('logs')){
-                            // console.log('events:' + holderActivity[1][j].results[resultIterator].logs.events.length);
+                            console.log('events:' + holderActivity[1][j].results[resultIterator].logs.events.length);
                             for(let eventIterator = 0; eventIterator < holderActivity[1][j].results[resultIterator].logs.events.length; eventIterator++){
                                 // console.log('has identifier?: ' + holderActivity[1][j].results[resultIterator].logs.events[eventIterator].hasOwnProperty('identifier'));
                                 if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].hasOwnProperty('identifier')){
                                     if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].identifier == "listing"){
-                                        // console.log('Found listing');
-                                        console.log(holderActivity[1][j].results[resultIterator].logs.events[eventIterator]);
+                                        console.log('Found listing in last else');
+                                        // console.log(holderActivity[1][j].results[resultIterator].logs.events[eventIterator]);
                                         let tempBigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].topics[6])));
                                         listPrice = new BigNumber(tempBigValue.shiftedBy(-18).decimalPlaces(4))
+                                        console.log('Found listing on Xoxno within results for 1 event log for: ' + listPrice)
+                                        if(listPrice < braindeadAsBigValue){
+                                            console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                                            txHashList.push(holderActivity[1][j].txHash);
+                                            local_brainDeadListings = local_brainDeadListings + 1;
+                                            if(braindeadList.length == 0){
+                                                braindeadList.push({
+                                                    address: holder.address,
+                                                    brainDeadListings: local_brainDeadListings,
+                                                    brainDeadTxHashes: txHashList
+                                                })
+                                            }
+                                            else{
+                                                var idx = -1;
+                                                idx = braindeadList.findIndex(item => item.address === holder.address);
+                                                if(idx != -1){
+                                                    braindeadList[idx].brainDeadTxHashes = txHashList;
+                                                    braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                                }
+                                                else {
+                                                    braindeadList.push({
+                                                        address: holder.address,
+                                                        brainDeadListings: local_brainDeadListings,
+                                                        brainDeadTxHashes: txHashList
+                                                        })
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-                console.log('Listed on Xoxno for: ' + listPrice);
-
-                if(listPrice < braindeadAsBigValue){
-                    // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
-                    txHashList.push(holderActivity[1][j].txHash);
-                    local_brainDeadListings = local_brainDeadListings + 1;
-                    if(braindeadList.length == 0){
-                        braindeadList.push({
-                            address: holder.address,
-                            brainDeadListings: local_brainDeadListings,
-                            brainDeadTxHashes: txHashList
-                        })
-                    }
-                    else{
-                        var idx = -1;
-                        idx = braindeadList.findIndex(item => item.address === holder.address);
-                        if(idx != -1){
-                        braindeadList[idx].brainDeadTxHashes = txHashList;
-                        braindeadList[idx].brainDeadListings = local_brainDeadListings;
-                        }
-                        else {
-                        braindeadList.push({
-                            address: holder.address,
-                            brainDeadListings: local_brainDeadListings,
-                            brainDeadTxHashes: txHashList
-                            })
-                        }
-                    }
-                }
+                // console.log('Listed on Xoxno for: ' + listPrice);
             }
         }
     }
