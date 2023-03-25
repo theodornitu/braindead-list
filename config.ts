@@ -10,4 +10,6 @@ export const walletConnectBridge = process.env.NEXT_PUBLIC_WALLET_CONNECT_BRIDGE
 export const walletConnectDeepLink = process.env.NEXT_PUBLIC_WALLET_CONNECT_DEEP_LINK;
 export const chainId = process.env.NEXT_PUBLIC_CHAIN_ID;
 export const denomination = parseInt(process.env.NEXT_PUBLIC_DENOMINATION as string, 10);
-export const egldLabel = process.env.NEXT_PUBLIC_EGLD_LABEL ?? 'xEGLD';
+export const braindead_wallet = process.env.NEXT_PUBLIC_BRAINDEAD_WALLET;
+export const networkEnv = process.env.NEXT_PUBLIC_APP_MODE;
+

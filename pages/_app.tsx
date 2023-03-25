@@ -4,11 +4,13 @@ import store from "../redux/store";
 import {Provider as ReduxProvider} from "react-redux";
 import Notifications from "../components/Notifications";
 import {AuthContextProvider} from "@elrond-giants/erd-react-hooks";
+import {networkEnv} from "../config";
+
 
 function MyApp({Component, pageProps}: AppProps) {
     return (
         <ReduxProvider store={store}>
-            <AuthContextProvider env={process.env.NODE_ENV === "production" ? "mainnet" : "devnet"}>
+            <AuthContextProvider env={networkEnv == "mainnet" ? "mainnet" : "devnet"}>
                 <Component {...pageProps} />
                 <Notifications/>
             </AuthContextProvider>

@@ -345,15 +345,58 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                         }
                     }
                 }
-                // console.log('Listed on Xoxno for: ' + listPrice);
             }
         }
     }
     return braindeadList;
 }
 
-// export async function getBraindeadHolders(localCollectionSize: number) {
+export async function getCollectionActivity(cIdentifier: string, startDate: number, endDate: number, scSearchSize: number, scSkipResults: number): Promise<{}[]> {
+    const response = await fetch('/api/getCollectionActivity', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({  collectionIdentifier: cIdentifier, 
+                                startDate: startDate, 
+                                endDate: endDate, 
+                                scSearchSize: scSearchSize,
+                                scSkipResults: scSkipResults
+                            }),
+    });
+    const data = await response.json();
+    return data;
+};
 
+export async function getCollectionTxCount(cIdentifier: string, startDate: number, endDate: number): Promise<number> {
+    const response = await fetch('/api/getCollectionTxCount', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({  collectionIdentifier: cIdentifier, 
+                                startDate: startDate, 
+                                endDate: endDate
+                            }),
+    });
+    const data = await response.json();
+    return data;
+};
+
+export async function checkHolderActivityV2 (braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[], holder: {address: string, balance: number}, holderActivity: any, braindeadThreshold: string): Promise<({address: string, brainDeadListings: number, brainDeadTxHashes: string[]}[])> {
+
+    //Step 1: Check collection transaction count -> Will be used for API split into sizes of 50
+
+    //Step 2: Request blocks of 50 transactions and check for function: listing || auctionToken
+
+    //Step 3: Check listing price for listed NFT
+
+    //Step 4: Compare listing price with brainDeadTreshold
+
+    return braindeadList;
+}
+
+// export async function getBraindeadHolders(localCollectionSize: number) {
 //         const response = await fetch('/api/getBraindeadHolders', {
 //             method: 'POST',
 //             headers: {

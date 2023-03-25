@@ -1,13 +1,14 @@
 import type {NextPage} from 'next'
 import RequiresAuth from "../components/RequiresAuth";
 import {useAuth} from "@elrond-giants/erd-react-hooks";
-import {egldLabel} from "../config";
 import {useState} from "react";
 import {useTransaction} from "../hooks/useTransaction";
 import {webWalletTxReturnPath} from "../utils/routes";
 
 import Analytics from '../components/Analytics';
 import Braindead from '../components/Braindead';
+
+import {networkEnv} from '../config';
 
 const Home: NextPage = () => {
     const {address, logout, env, balance, nonce} = useAuth();
@@ -46,7 +47,7 @@ const Home: NextPage = () => {
                     <h2 className="text-xl">Welcome to braindead list!</h2>
                     <p className="text-sm">Here you&apos;ll be able to see who are the brain dead ppl that list below mint price lol</p>
                     <p className="text-sm">Address: {address}</p>
-                    <p className="text-sm">You rich mf have: {balance.toDenominatedString() + egldLabel}</p>                    
+                    <p className="text-sm">You rich mf have: {balance.toDenominatedString() + (networkEnv == 'mainnet' ? 'EGLD' : 'xEGLD')}</p>                    
 
                     <div className="w-full">
                         <ul className="relative flex flex-wrap list-none bg-transparent rounded-xl">
@@ -80,57 +81,6 @@ const Home: NextPage = () => {
                     ) : (
                         <Braindead />
                     )}
-
-
-                    {/*verify if env is dev or test*/}
-                    {/* {env === "devnet" && <div className="pt-6 w-full">
-                        <p>Make a devnet test transaction</p>
-                        <form className="space-y-4 pt-6 w-full">
-                            <div className="w-full">
-                                <label htmlFor="email"
-                                       className="block text-sm font-medium text-gray-700"
-                                >
-                                    Receiver Address
-                                </label>
-                                <input
-                                    value={receiverAddress}
-                                    onChange={event => {
-                                        setReceiverAddress(event.target.value)
-                                    }}
-                                    type="text"
-                                    name="address"
-                                    className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
-
-                            </div>
-                            <div className="w-full">
-                                <label htmlFor="email"
-                                       className="block text-sm font-medium text-gray-700"
-                                >
-                                    Transaction Data
-                                </label>
-
-                                <input
-                                    value={txData}
-                                    onChange={event => {
-                                        setTxData(event.target.value)
-                                    }}
-                                    type="text"
-                                    name="data"
-                                    className="mt-1 p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"/>
-
-                            </div>
-                            <button type="button"
-                                    className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        sendTransaction();
-                                    }}
-                            >
-                                Sign devnet transaction
-                            </button>
-                        </form>
-                    </div>
-                    } */}
                 </div>
             </div>
         </RequiresAuth>

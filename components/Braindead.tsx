@@ -14,6 +14,10 @@ import ProgressBar from '../components/helpers/ProgressBar';
 // Misc lib
 import {sleep, map} from '../lib/misc';
 
+// Giants
+import {useTransaction} from "../hooks/useTransaction";
+import {ITransactionProps} from "@elrond-giants/erd-react-hooks/dist/types";
+import {braindead_wallet} from '../config'
 
 export default function Braindead() {
 
@@ -37,6 +41,10 @@ export default function Braindead() {
     const [startDate, setStartDate] = useState(new Date(2023,0,1));
     const [endDate, setEndDate] = useState(new Date(2023,0,2));
     const [braindeadThreshold, setBraindeadThreshold] = useState('');
+
+    // Mvx related
+    const { whenCompleted, makeTransaction } = useTransaction();
+
     // -----------------
 
     // ----------------- Variables for intermidiate results computation
@@ -46,45 +54,71 @@ export default function Braindead() {
     let braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[] = [];
     // -----------------
 
+    // ----------------- Payment
+    let txData: ITransactionProps = {
+        receiver: braindead_wallet as string,
+        data: "generate",
+        gasLimit: 50_000_000,
+        value: 1,
+    };
+
     async function callCompute() {
         try {
-            //Get collection details
-            setApiProgress(0);
-            let currentRequest = 0;
-            let colHolders = await getCollectionOwners(cIdentif);
-            console.log('Collection holders');
-            console.log(colHolders);
+            if(cIdentif != "" && parseInt(braindeadThreshold) != 0 && startDate != null && endDate != null){
+                //Get paid
+                var txObject; 
 
-            //debug
-            // let temp = colHolders.splice(0,25);
-            // colHolders = temp;
-            // console.log('colHolders splice: ' + colHolders.length)
-            //end of debug
 
-            console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
-            for(const holder of colHolders) {
+                txData.data = cIdentif + '@' + braindeadThreshold + '@' + startDate.getTime()/1000 + '@' + endDate.getTime()/1000;
+                txObject = await makeTransaction(txData);
+                const txHash = String(txObject?.hash);
+                const txResult = await whenCompleted(txHash, {interval: 2000});
+                if (txResult.status.isExecuted()){
+                    //Get collection details
+                    setApiProgress(0);
+                    let currentRequest = 0;
+                    let colHolders = await getCollectionOwners(cIdentif);
+                    console.log('Collection holders');
+                    console.log(colHolders);
 
-                setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
-                currentRequest++;
+                    //debug
+                    // let temp = colHolders.splice(0,25);
+                    // colHolders = temp;
+                    // console.log('colHolders splice: ' + colHolders.length)
+                    //end of debug
 
-                // Check FrameIt listings
-                const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess, false, false, false);
-                // console.log(holderActivity);
-                sleep(600);
-                const holderActivityXo = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_Xoxno,scSearchSize,txResultSuccess, true, true, true);
-                // console.log(holderActivityXo);
-                sleep(600);
+                    console.log('Checking for braindead holders within ' + colHolders.length + ' addresses');
+                    for(const holder of colHolders) {
 
-                const holderActivityMerged = [holderActivity, holderActivityXo];
-                // console.log(holderActivityMerged);
+                        setApiProgress(Math.round(map(currentRequest,0,colHolders.length,0,100)));
+                        currentRequest++;
 
-                braindeadList = await checkHolderActivity(braindeadList, holder, holderActivityMerged, braindeadThreshold);
+                        // Check FrameIt listings
+                        const holderActivity = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_FrameIt,scSearchSize,txResultSuccess, false, false, false);
+                        // console.log(holderActivity);
+                        sleep(600);
+                        const holderActivityXo = await getHolderActivity(holder.address,cIdentif,startDate.getTime()/1000,endDate.getTime()/1000,scFnSearch_Xoxno,scSearchSize,txResultSuccess, true, true, true);
+                        // console.log(holderActivityXo);
+                        sleep(600);
+
+                        const holderActivityMerged = [holderActivity, holderActivityXo];
+                        // console.log(holderActivityMerged);
+
+                        braindeadList = await checkHolderActivity(braindeadList, holder, holderActivityMerged, braindeadThreshold);
+                    }
+                    setApiProgress(100);
+                    console.log('BrainDeadList');
+                    braindeadList.sort((a: any, b: any) => b.brainDeadListings - a.brainDeadListings)
+                    console.log(braindeadList);
+                    setBDListState(braindeadList);
+                }
+                else{
+                    alert("Transaction failed. Please check transaction hash for potential problems!")
+                }
             }
-            setApiProgress(100);
-            console.log('BrainDeadList');
-            braindeadList.sort((a: any, b: any) => b.brainDeadListings - a.brainDeadListings)
-            console.log(braindeadList);
-            setBDListState(braindeadList);
+            else{
+                alert("Please fill the required fields, braindead!")
+            }
         }
         catch(error) {
             console.log(error)
