@@ -176,10 +176,14 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
                 var bigValue = new BigNumber(999); 
                 var listPrice = new BigNumber(999);
 
+                console.log('Initialized bigValue, listPrice');
+
                 //Go through logs and check for listing price
                 //Part1: check if typical tx logs (with 3 event logs that contain 'listing' topics)
                 if(holderActivity[1][j].logs.events.length > 1){
+                    console.log('holderActivity[1][j].logs.events.length > 1 TRUE');
                     if(holderActivity[1][j].logs.events.length <= 3){
+                        console.log('holderActivity[1][j].logs.events.length <= 3 TRUE');
                         bigValue =  new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[1].topics[6])));
                         listPrice = bigValue.shiftedBy(-18).decimalPlaces(4);
                         console.log('Found less than 3 <events> => Normal listing for: ' + listPrice);
@@ -351,6 +355,159 @@ export async function checkHolderActivity (braindeadList: { address: string, bra
     return braindeadList;
 }
 
+export async function checkHolderActivityV2 (braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[], holder: {address: string, balance: number}, holderActivity: any, braindeadThreshold: string): Promise<({address: string, brainDeadListings: number, brainDeadTxHashes: string[]}[])> {
+    let txHashList : string[] = [];
+    // console.log('Holder activity: ' + holderActivity.length);
+    // console.log('API for: ' + holder.address);
+    // Expected minimum length = 1 (1 => listings only on one marketplace, 2 => listings on both marketplaces)
+    if(holderActivity.length != 0) {
+        // console.log('data.length not equal 0: ' + holderActivity.length);
+        // console.log(holderActivity);
+        // console.log('init number of deadbrain listings ');
+
+        let local_brainDeadListings: number = 0;
+        const braindeadAsBigValue = new BigNumber(parseFloat(braindeadThreshold));
+        // console.log('braindead as bigint: ' + braindeadAsBigValue);
+
+        if(holderActivity[0].length != 0){
+            //Step 1: FrameIt (holderActivity[0] is holding FrameIt listings)
+            for(let j = 0; j < holderActivity[0].length; j++){
+                // console.log(holderActivity[j].action.arguments);
+
+                const bigValue =  new BigNumber(parseInt(holderActivity[0][j].action.arguments.functionArgs[0], 16))
+                console.log('Listed on FrameIt for: ' + bigValue.shiftedBy(-18).decimalPlaces(4));
+
+                if(bigValue.shiftedBy(-18).decimalPlaces(4) < braindeadAsBigValue){
+                    // console.log('pushing braindead txHash ' + holderActivity[0][j].txHash);
+                    txHashList.push(holderActivity[0][j].txHash);
+                    local_brainDeadListings = local_brainDeadListings + 1;
+                    if(braindeadList.length == 0){
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
+                        })
+                    }
+                    else{
+                        var idx = -1;
+                        idx = braindeadList.findIndex(item => item.address === holder.address);
+                        if(idx != -1){
+                        braindeadList[idx].brainDeadTxHashes = txHashList;
+                        braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                        }
+                        else {
+                        braindeadList.push({
+                            address: holder.address,
+                            brainDeadListings: local_brainDeadListings,
+                            brainDeadTxHashes: txHashList
+                            })
+                        }
+                    }
+                }
+            }
+        }
+        if(holderActivity[1].length != 0){
+            //Step 2: Xoxno (holderActivity[1] is holding Xoxno listings)
+            for(let j = 0; j < holderActivity[1].length; j++){
+                console.log('Activity');
+                console.log(holderActivity[1][j]);
+                console.log('events: ' + holderActivity[1][j].logs.events.length);
+
+                var bigValue = new BigNumber(999); 
+                var listPrice = new BigNumber(999);
+
+                var foundListing: boolean = false;
+
+                console.log('Initialized bigValue, listPrice');
+
+                //Go through logs and check for listing price
+                //Part1: check if typical tx logs (with 3 event logs that contain 'listing' topics)
+                if(holderActivity[1][j].hasOwnProperty('logs') && holderActivity[1][j].logs.hasOwnProperty('events')){
+                    console.log('logs object and ' + holderActivity[1][j].logs.events.length + ' events found');
+                    for(let eventIterator = 0; eventIterator < holderActivity[1][j].logs.events.length; eventIterator++){
+                        if(holderActivity[1][j].logs.events[eventIterator].identifier == 'listing'){
+                            foundListing = true;
+                            let tempBigValue = new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].logs.events[eventIterator].topics[6])));
+                            listPrice =  new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
+                            console.log('Found listing within logs>events for: ' + listPrice + ' EGLD');
+
+                            if(listPrice < braindeadAsBigValue){
+                                console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                                txHashList.push(holderActivity[1][j].txHash);
+                                local_brainDeadListings = local_brainDeadListings + 1;
+
+                                if(braindeadList.length == 0)
+                                    braindeadList.push({ address: holder.address, brainDeadListings: local_brainDeadListings, brainDeadTxHashes: txHashList })
+                                else{
+                                    var idx = -1;
+                                    idx = braindeadList.findIndex(item => item.address === holder.address);
+                                    if(idx != -1){
+                                        braindeadList[idx].brainDeadTxHashes = txHashList;
+                                        braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                    }
+                                    else
+                                        braindeadList.push({ address: holder.address, brainDeadListings: local_brainDeadListings, brainDeadTxHashes: txHashList})
+                                }
+                            }
+                        }
+                        else
+                            console.log('No listing found wihtin logs>events for event #' + eventIterator);
+                    }
+                }
+                if(foundListing == false) {
+                    console.log('Transaction does not have logs>events object, searching through results');
+
+                    if(holderActivity[1][j].hasOwnProperty('results')){
+                        console.log(holderActivity[1][j].results.length + ' results found, checking for logs & events');
+
+                        for(let resultIterator = 0; resultIterator < holderActivity[1][j].results.length; resultIterator++){
+                            if(holderActivity[1][j].results[resultIterator].hasOwnProperty('logs') && holderActivity[1][j].results[resultIterator].logs.hasOwnProperty('events')){
+                                console.log(holderActivity[1][j].results[resultIterator].logs.events.length + ' events found inside results, checking for listings');
+                                
+                                for(let eventIterator = 0; eventIterator < holderActivity[1][j].results[resultIterator].logs.events.length; eventIterator++){
+                                    if(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].identifier == 'listing'){
+                                        let tempBigValue = new BigNumber(hexToNumber(base64ToHex(holderActivity[1][j].results[resultIterator].logs.events[eventIterator].topics[6])));
+                                        listPrice =  new BigNumber(Math.min(tempBigValue.shiftedBy(-18).decimalPlaces(4).toNumber(),listPrice.toNumber()));
+                                        
+                                        console.log('Found listing within logs>events for: ' + listPrice + ' EGLD');
+
+                                        if(listPrice < braindeadAsBigValue){
+                                            console.log('pushing braindead txHash ' + holderActivity[1][j].txHash);
+                                            txHashList.push(holderActivity[1][j].txHash);
+                                            local_brainDeadListings = local_brainDeadListings + 1;
+
+                                            if(braindeadList.length == 0)
+                                                braindeadList.push({ address: holder.address, brainDeadListings: local_brainDeadListings, brainDeadTxHashes: txHashList })
+                                            else{
+                                                var idx = -1;
+                                                idx = braindeadList.findIndex(item => item.address === holder.address);
+                                                if(idx != -1){
+                                                    braindeadList[idx].brainDeadTxHashes = txHashList;
+                                                    braindeadList[idx].brainDeadListings = local_brainDeadListings;
+                                                }
+                                                else
+                                                    braindeadList.push({ address: holder.address, brainDeadListings: local_brainDeadListings, brainDeadTxHashes: txHashList})
+                                            }
+                                        }
+                                    }
+                                    else
+                                        console.log('No listing found for result ' + resultIterator + ' and event ' + eventIterator);
+                                }
+                            }
+                            else
+                                console.log('Result ' + resultIterator + ' has no properties called logs or logs.events')
+                        }
+                    }
+                    else
+                        console.log('Transaction does not have results object, exiting');
+                }
+            }
+        }
+        console.log('Transaction does not have Xoxno activity');
+    }
+    return braindeadList
+}
+
 export async function getCollectionActivity(cIdentifier: string, startDate: number, endDate: number, scSearchSize: number, scSkipResults: number): Promise<{}[]> {
     const response = await fetch('/api/getCollectionActivity', {
         method: 'POST',
@@ -383,7 +540,7 @@ export async function getCollectionTxCount(cIdentifier: string, startDate: numbe
     return data;
 };
 
-export async function checkHolderActivityV2 (braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[], holder: {address: string, balance: number}, holderActivity: any, braindeadThreshold: string): Promise<({address: string, brainDeadListings: number, brainDeadTxHashes: string[]}[])> {
+export async function checkCollectionActivityV2 (braindeadList: { address: string, brainDeadListings: number, brainDeadTxHashes: string[] }[], holder: {address: string, balance: number}, holderActivity: any, braindeadThreshold: string): Promise<({address: string, brainDeadListings: number, brainDeadTxHashes: string[]}[])> {
 
     //Step 1: Check collection transaction count -> Will be used for API split into sizes of 50
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import BigNumber from "bignumber.js";
 
 // My mvx lib
-import {getCollectionType, getCollectionSize, getCollectionOwners, getHolderActivity, checkHolderActivity} from '../lib/mvx'; //API endpoints
+import {getCollectionType, getCollectionSize, getCollectionOwners, getHolderActivity, checkHolderActivity, checkHolderActivityV2} from '../lib/mvx'; //API endpoints
 import {XoxnoAddress, FrameItAddress, mferAddress, minterAddress} from '../lib/mvx'; //consts
 import {apiAddr, reqCollection, reqNfts, explorerTransactions} from '../lib/mvx'; //consts
 import {renderSwitch} from '../lib/mvx'; //methods
@@ -59,12 +59,16 @@ export default function Braindead() {
         receiver: braindead_wallet as string,
         data: "generate",
         gasLimit: 50_000_000,
-        value: 1,
+        value: 0.1,
     };
 
     async function callCompute() {
         try {
-            if(cIdentif != "" && parseInt(braindeadThreshold) != 0 && startDate != null && endDate != null){
+            console.log(startDate.getTime()/1000);
+            console.log(endDate.getTime()/1000);
+            console.log(parseFloat(braindeadThreshold));
+            console.log(cIdentif);
+            if(cIdentif != "" && parseFloat(braindeadThreshold) != 0 && startDate.getTime()/1000 != 0 && endDate.getTime()/1000 != 0){
                 //Get paid
                 var txObject; 
 
@@ -104,7 +108,7 @@ export default function Braindead() {
                         const holderActivityMerged = [holderActivity, holderActivityXo];
                         // console.log(holderActivityMerged);
 
-                        braindeadList = await checkHolderActivity(braindeadList, holder, holderActivityMerged, braindeadThreshold);
+                        braindeadList = await checkHolderActivityV2(braindeadList, holder, holderActivityMerged, braindeadThreshold);
                     }
                     setApiProgress(100);
                     console.log('BrainDeadList');
